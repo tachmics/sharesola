@@ -1,103 +1,107 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { SKY_SPOTS } from "../lib/spots"; // 🌟 共通化したデータを使用
+import { ArrowLeft, Calendar, Clock, MapPin, CheckCircle2 } from "lucide-react";
 
+// 1. メインのページコンポーネント
 export default function ReservePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <p className="animate-pulse">Loading SOLA...</p>
+      </div>
+    }>
+      <ReservationContent />
+    </Suspense>
+  );
+}
+
+// 2. 実際の予約ロジック（元のコードの中身をここに集約）
+function ReservationContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const id = Number(searchParams.get("id")) || 1;
-  const spot = SKY_SPOTS.find(s => s.id === id) || SKY_SPOTS[0];
 
-  const [timeProgress, setTimeProgress] = useState(50);
-  const [bgStyle, setBgStyle] = useState("");
+  // URLからパラメータを取得
+  const date = searchParams.get("date") || "2024-05-20";
+  const time = searchParams.get("time") || "19:00";
+  const color = searchParams.get("color") || "#FFD700";
 
-  useEffect(() => {
-    let color = "";
-    if (timeProgress < 30) color = "linear-gradient(to bottom, #4facfe 0%, #00f2fe 100%)";
-    else if (timeProgress < 60) color = "linear-gradient(to bottom, #f83600 0%, #f9d423 100%)";
-    else if (timeProgress < 85) color = "linear-gradient(to bottom, #6a11cb 0%, #2575fc 100%)";
-    else color = "linear-gradient(to bottom, #09203f 0%, #537895 100%)";
-    setBgStyle(color);
-  }, [timeProgress]);
-
-  // ☀️ 太陽・月の位置を計算（スライダー 0-100 に連動）
-  const celestialX = timeProgress; // 0% - 100%
-  const celestialY = Math.sin((timeProgress / 100) * Math.PI) * 50; // 放物線を描く
+  const handleConfirm = () => {
+    alert("予約が完了しました！当日は神楽坂でお待ちしております。");
+    router.push("/");
+  };
 
   return (
-    <div 
-      className="min-h-screen w-full transition-all duration-1000 ease-in-out flex flex-col p-8 text-white font-sans overflow-hidden relative"
-      style={{ background: bgStyle }}
-    >
-      {/* ☀️ 天体アニメーションレイヤー */}
-      <div 
-        className="absolute text-5xl transition-all duration-500 ease-out pointer-events-none"
-        style={{ 
-          left: `${celestialX}%`, 
-          top: `${60 - celestialY}%`,
-          filter: "drop-shadow(0 0 20px white)",
-          opacity: 0.8
-        }}
+    <main className="min-h-screen bg-black text-white p-6 pb-24">
+      <button 
+        onClick={() => router.back()}
+        className="mb-8 flex items-center text-zinc-400 hover:text-white transition-colors"
       >
-        {timeProgress < 70 ? "☀️" : "🌙"}
-      </div>
-
-      {/* 🔙 戻る */}
-      <button onClick={() => router.back()} className="relative z-10 mb-8 self-start bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 text-xs font-bold uppercase tracking-widest">
-        ← BACK TO SKY
+        <ArrowLeft className="w-5 h-5 mr-2" />
+        戻る
       </button>
 
-      <div className="relative z-10 flex-grow flex flex-col justify-end pb-12">
-        <div className="mb-12">
-          <div className="w-16 h-16 bg-white/20 backdrop-blur-2xl rounded-2xl flex items-center justify-center text-4xl mb-6 shadow-2xl">
-            {spot.icon}
-          </div>
-          <h1 className="text-5xl font-black tracking-tighter mb-2 leading-none">{spot.name}</h1>
-          <p className="text-white/60 font-bold uppercase tracking-[0.3em] text-[10px]">{spot.location}</p>
-        </div>
+      <div className="max-w-md mx-auto space-y-8">
+        <header>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-zinc-500 bg-clip-text text-transparent">
+            SOLA Reservation
+          </h1>
+          <p className="text-zinc-400 mt-2">選択した光の柱を予約します</p>
+        </header>
 
-        {/* 🕒 インテリジェント・タイムセレクター */}
-        <div className="bg-black/20 backdrop-blur-3xl p-8 rounded-[40px] border border-white/10 shadow-2xl">
-          <div className="flex justify-between items-center mb-10">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-2">Reserved Slot</span>
-              <span className="text-5xl font-black italic tabular-nums leading-none">
-                {Math.floor(12 + (timeProgress / 100) * 12)}:00
-              </span>
+        <section className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 space-y-6">
+          <div className="flex items-start space-x-4">
+            <div className="p-3 bg-zinc-800 rounded-2xl">
+              <MapPin className="w-6 h-6 text-zinc-400" />
             </div>
-            <div className="h-12 w-[2px] bg-white/10" />
-            <div className="text-right">
-              <span className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-2">Price</span>
-              <span className="text-2xl font-black block">¥3,500</span>
+            <div>
+              <p className="text-sm text-zinc-500 text-left">Location</p>
+              <p className="text-lg font-medium">神楽坂エリア (Kagurazaka)</p>
             </div>
           </div>
 
-          <div className="relative h-12 flex items-center">
-            <input 
-              type="range" 
-              min="0" max="100" 
-              value={timeProgress}
-              onChange={(e) => setTimeProgress(Number(e.target.value))}
-              className="w-full h-1 bg-white/20 rounded-full appearance-none cursor-pointer accent-white"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-start space-x-4">
+              <div className="p-3 bg-zinc-800 rounded-2xl">
+                <Calendar className="w-6 h-6 text-zinc-400" />
+              </div>
+              <div>
+                <p className="text-sm text-zinc-500 text-left">Date</p>
+                <p className="text-lg font-medium">{date}</p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-4">
+              <div className="p-3 bg-zinc-800 rounded-2xl">
+                <Clock className="w-6 h-6 text-zinc-400" />
+              </div>
+              <div>
+                <p className="text-sm text-zinc-500 text-left">Time</p>
+                <p className="text-lg font-medium">{time}</p>
+              </div>
+            </div>
           </div>
-          
-          <div className="flex justify-between mt-4 text-[9px] font-black opacity-30 uppercase tracking-[0.2em]">
-            <span>Daylight</span>
-            <span>Sunset</span>
-            <span>Night</span>
-          </div>
-        </div>
 
-        <button 
-          className="mt-8 w-full bg-white text-black py-6 rounded-[28px] font-black text-xl shadow-[0_20px_50px_rgba(255,255,255,0.2)] active:scale-95 transition-all hover:bg-opacity-90"
-          onClick={() => alert(`Reserved: ${spot.name} at ${Math.floor(12 + (timeProgress / 100) * 12)}:00`)}
+          <div className="pt-6 border-t border-zinc-800">
+            <p className="text-sm text-zinc-500 mb-3 text-left">Selected Pillar Color</p>
+            <div className="flex items-center space-x-3">
+              <div 
+                className="w-8 h-8 rounded-full shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+                style={{ backgroundColor: color }}
+              />
+              <span className="font-mono text-zinc-300">{color.toUpperCase()}</span>
+            </div>
+          </div>
+        </section>
+
+        <button
+          onClick={handleConfirm}
+          className="w-full bg-white text-black py-5 rounded-2xl font-bold text-lg hover:bg-zinc-200 transition-all active:scale-[0.98] flex items-center justify-center space-x-2 shadow-[0_0_30px_rgba(255,255,255,0.2)]"
         >
-          CONFIRM RESERVATION
+          <CheckCircle2 className="w-6 h-6" />
+          <span>予約を確定する</span>
         </button>
       </div>
-    </div>
+    </main>
   );
 }
