@@ -2,22 +2,24 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { SKY_SPOTS } from "../lib/spots";
+import { AnimatePresence, motion } from "framer-motion";
+import { SKY_SPOTS, FREE_SPOTS, FreeSpot } from "../lib/spots";
 
 export default function ARPage() {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
-  
-  const [alpha, setAlpha] = useState(0); 
-  const [beta, setBeta] = useState(0);   
-  const [userPos, setUserPos] = useState<{lat: number, lng: number} | null>(null);
+
+  const [alpha, setAlpha] = useState(0);
+  const [beta, setBeta] = useState(0);
+  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [isStarted, setIsStarted] = useState(false);
-  const [activeSpot, setActiveSpot] = useState<(any) | null>(null);
+  const [activeSpot, setActiveSpot] = useState<any | null>(null);
 
   // 数学ロジック（getBearing, getDistance）は既存のものを維持
   const getBearing = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const φ1 = lat1 * Math.PI / 180; const φ2 = lat2 * Math.PI / 180;
-    const Δλ = (lon2 - lon1) * Math.PI / 180;
+    const φ1 = (lat1 * Math.PI) / 180;
+    const φ2 = (lat2 * Math.PI) / 180;
+    const Δλ = ((lon2 - lon1) * Math.PI) / 180;
     const y = Math.sin(Δλ) * Math.cos(φ2);
     const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
     return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
@@ -25,17 +27,25 @@ export default function ARPage() {
 
   const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     const R = 6371e3;
-    const φ1 = lat1 * Math.PI / 180; const φ2 = lat2 * Math.PI / 180;
-    const Δφ = (lat2 - lat1) * Math.PI / 180; const Δλ = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const φ1 = (lat1 * Math.PI) / 180;
+    const φ2 = (lat2 * Math.PI) / 180;
+    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+    const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   };
 
   const startAR = async () => {
     try {
-      navigator.geolocation.watchPosition((pos) => {
-        setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-      }, (err) => console.error(err), { enableHighAccuracy: true });
+      navigator.geolocation.watchPosition(
+        (pos) => {
+          setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        },
+        (err) => console.error(err),
+        { enableHighAccuracy: true }
+      );
 
       if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
         await (DeviceOrientationEvent as any).requestPermission();
@@ -107,24 +117,28 @@ export default function ARPage() {
 
           {/* 📱 レイアウト改善：少し上に配置（bottom-20） */}
           <div className="relative z-50 p-6 pb-20 pointer-events-none">
-            {activeSpot ? (
-              <div onClick={() => router.push(`/reserve?id=${activeSpot.id}`)} className="pointer-events-auto bg-white/95 backdrop-blur-xl p-5 rounded-[32px] flex items-center justify-between shadow-[0_20px_60px_rgba(0,0,0,0.4)] animate-in fade-in slide-in-from-bottom-8">
-                <div className="flex items-center gap-4 text-slate-900">
-                  <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-3xl shadow-lg">{activeSpot.icon}</div>
-                  <div>
-                    <h3 className="font-black text-lg leading-none mb-1">{activeSpot.name}</h3>
-                    <p className="text-blue-600 font-black text-[10px] uppercase">{activeSpot.dist}m | {activeSpot.altitude}m↑</p>
+            <AnimatePresence>
+              {activeSpot ? (
+                <MotionSpotCard
+                  key={activeSpot.id}
+                  activeSpot={activeSpot}
+                  onReserve={() => router.push(`/reserve?id=${activeSpot.id}`)}
+                />
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="text-center"
+                >
+                  <div className="inline-block bg-black/40 backdrop-blur-md px-6 py-2 rounded-full border border-white/10">
+                    <p className="text-[9px] font-black tracking-[0.3em] text-white opacity-70 uppercase">
+                      Looking for Rooftops...
+                    </p>
                   </div>
-                </div>
-                <div className="bg-blue-600 px-6 py-4 rounded-2xl text-white font-black text-xs uppercase shadow-md active:scale-90 transition-transform">Book</div>
-              </div>
-            ) : (
-              <div className="text-center">
-                <div className="inline-block bg-black/40 backdrop-blur-md px-6 py-2 rounded-full border border-white/10">
-                  <p className="text-[9px] font-black tracking-[0.3em] text-white opacity-70 uppercase">Looking for Rooftops...</p>
-                </div>
-              </div>
-            )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </>
       ) : (
@@ -142,3 +156,83 @@ export default function ARPage() {
     </div>
   );
 }
+
+type MotionSpotCardProps = {
+  activeSpot: any;
+  onReserve: () => void;
+};
+
+const MotionSpotCard: React.FC<MotionSpotCardProps> = ({ activeSpot, onReserve }) => {
+  const detail: FreeSpot | undefined = FREE_SPOTS.find((s) => s.id === activeSpot.id);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 40 }}
+      transition={{ type: "spring", damping: 22, stiffness: 260 }}
+      className="pointer-events-auto bg-zinc-900/80 backdrop-blur-2xl border border-white/10 p-5 rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.6)] flex flex-col gap-4"
+    >
+      <div className="flex items-center gap-4">
+        <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-3xl shadow-lg">
+          {activeSpot.icon}
+        </div>
+        <div className="flex-1 text-left">
+          <h3 className="font-black text-lg leading-tight mb-1 text-white">
+            {detail?.name ?? activeSpot.name}
+          </h3>
+          <p className="text-xs text-blue-300 font-semibold">
+            {activeSpot.dist != null && `${Math.round(activeSpot.dist)}m`}{" "}
+            {activeSpot.altitude != null && `| ${activeSpot.altitude}m↑`}
+          </p>
+        </div>
+      </div>
+
+      {detail && detail.images?.length > 0 && (
+        <div className="mt-1 -mx-1">
+          <div className="flex gap-3 overflow-x-auto pb-1 px-1 snap-x snap-mandatory">
+            {detail.images.map((src, idx) => (
+              <div
+                key={idx}
+                className="relative min-w-[200px] max-w-[260px] h-32 rounded-2xl overflow-hidden snap-start bg-zinc-800/80 border border-white/5 flex-shrink-0"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={src}
+                  alt={`${detail.name} ${idx + 1}`}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {detail?.description && (
+        <p className="text-xs text-zinc-200 text-left leading-relaxed mt-1">
+          {detail.description}
+        </p>
+      )}
+
+      {detail && (
+        <div className="flex items-center justify-between gap-3 mt-1">
+          <button
+            type="button"
+            onClick={onReserve}
+            className="flex-1 bg-white text-black py-3 rounded-2xl font-bold text-xs tracking-wide shadow-[0_0_25px_rgba(255,255,255,0.25)] active:scale-[0.97] transition-transform"
+          >
+            このスポットを予約する
+          </button>
+          <a
+            href={detail.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="px-3 py-2 rounded-2xl border border-white/20 text-[10px] text-zinc-200 hover:bg-white/5 transition-colors"
+          >
+            出典: {detail.sourceLabel}
+          </a>
+        </div>
+      )}
+    </motion.div>
+  );
+};
