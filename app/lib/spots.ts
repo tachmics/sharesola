@@ -69,3 +69,6 @@ export const FREE_SPOTS: FreeSpot[] = [
     sourceUrl: "https://example.com/hills-beach-iidabashi",
   },
 ];
+
+export const getFreeSpotById = (id: number): FreeSpot | undefined =>
+  FREE_SPOTS.find((spot) => spot.id === id);
