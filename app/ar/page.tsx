@@ -14,6 +14,47 @@ export default function ARPage() {
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [isStarted, setIsStarted] = useState(false);
   const [activeSpot, setActiveSpot] = useState<any | null>(null);
+  const [geoStatus, setGeoStatus] = useState<"idle" | "watching" | "denied" | "error">(
+    "idle"
+  );
+  const geoWatchIdRef = useRef<number | null>(null);
+
+  // 現在の位置に応じてアクティブなスポットの距離を更新し、
+  // 30m 以内に近づいたら自動的に詳細カードを開く
+  useEffect(() => {
+    if (!userPos) return;
+
+    // すでに選択されているスポットの距離をリアルタイム更新
+    if (activeSpot) {
+      const base = SKY_SPOTS.find((s) => s.id === activeSpot.id);
+      if (base) {
+        const d = getDistance(userPos.lat, userPos.lng, base.lat, base.lng);
+        setActiveSpot((prev: any | null) =>
+          prev && prev.id === base.id ? { ...prev, dist: Math.round(d) } : prev
+        );
+      }
+    }
+
+    const NEAR_THRESHOLD = 30; // m
+    let nearest: { spot: (typeof SKY_SPOTS)[number]; dist: number } | null = null;
+
+    for (const spot of SKY_SPOTS) {
+      const d = getDistance(userPos.lat, userPos.lng, spot.lat, spot.lng);
+      if (d <= NEAR_THRESHOLD && (!nearest || d < nearest.dist)) {
+        nearest = { spot, dist: d };
+      }
+    }
+
+    // 30m 以内に入ったスポットがある場合、自動的にカードを開く
+    if (nearest) {
+      setActiveSpot((prev: any | null) => {
+        if (prev && prev.id === nearest!.spot.id && prev.dist === Math.round(nearest!.dist)) {
+          return prev;
+        }
+        return { ...nearest!.spot, dist: Math.round(nearest!.dist) };
+      });
+    }
+  }, [userPos, activeSpot]);
 
   // 数学ロジック（getBearing, getDistance）は既存のものを維持
   const getBearing = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -39,14 +80,6 @@ export default function ARPage() {
 
   const startAR = async () => {
     try {
-      navigator.geolocation.watchPosition(
-        (pos) => {
-          setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        },
-        (err) => console.error(err),
-        { enableHighAccuracy: true }
-      );
-
       if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
         await (DeviceOrientationEvent as any).requestPermission();
       }
@@ -60,11 +93,42 @@ export default function ARPage() {
         if (e.beta !== null) setBeta(prev => prev * 0.8 + e.beta! * 0.2); 
       }, true);
 
+      if (!("geolocation" in navigator)) {
+        setGeoStatus("error");
+      } else {
+        setGeoStatus("watching");
+        const watchId = navigator.geolocation.watchPosition(
+          (pos) => {
+            setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+            setGeoStatus("watching");
+          },
+          (err) => {
+            console.error(err);
+            if (err.code === 1) {
+              setGeoStatus("denied");
+            } else {
+              setGeoStatus("error");
+            }
+          },
+          { enableHighAccuracy: true }
+        );
+        geoWatchIdRef.current = watchId;
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
       if (videoRef.current) { videoRef.current.srcObject = stream; await videoRef.current.play(); }
       setIsStarted(true);
     } catch (err) { alert("起動エラー"); }
   };
+
+  // コンポーネントのアンマウント時に位置情報ウォッチを停止
+  useEffect(() => {
+    return () => {
+      if (geoWatchIdRef.current !== null && "geolocation" in navigator) {
+        navigator.geolocation.clearWatch(geoWatchIdRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="fixed inset-0 bg-black overflow-hidden font-sans text-white flex flex-col">
@@ -140,6 +204,22 @@ export default function ARPage() {
               )}
             </AnimatePresence>
           </div>
+          {/* 現在地デバッグ表示（左下、小さく） */}
+          <div className="absolute left-2 bottom-2 z-40 rounded-md bg-black/60 px-2 py-1 text-[10px] text-white/70 pointer-events-none">
+            <div>geoStatus: {geoStatus}</div>
+            <div>
+              lat:{" "}
+              {userPos?.lat != null
+                ? userPos.lat.toFixed(5)
+                : "--"}
+            </div>
+            <div>
+              lng:{" "}
+              {userPos?.lng != null
+                ? userPos.lng.toFixed(5)
+                : "--"}
+            </div>
+          </div>
         </>
       ) : (
         <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-slate-900 px-10 text-center">
@@ -164,6 +244,8 @@ type MotionSpotCardProps = {
 
 const MotionSpotCard: React.FC<MotionSpotCardProps> = ({ activeSpot, onReserve }) => {
   const detail: FreeSpot | undefined = FREE_SPOTS.find((s) => s.id === activeSpot.id);
+  const isArrived =
+    typeof activeSpot?.dist === "number" && !Number.isNaN(activeSpot.dist) && activeSpot.dist <= 30;
 
   return (
     <motion.div
@@ -181,10 +263,20 @@ const MotionSpotCard: React.FC<MotionSpotCardProps> = ({ activeSpot, onReserve }
           <h3 className="font-black text-lg leading-tight mb-1 text-white">
             {detail?.name ?? activeSpot.name}
           </h3>
-          <p className="text-xs text-blue-300 font-semibold">
+          <p
+            className={`text-xs font-semibold ${
+              isArrived ? "text-amber-300" : "text-blue-300"
+            }`}
+          >
             {activeSpot.dist != null && `${Math.round(activeSpot.dist)}m`}{" "}
             {activeSpot.altitude != null && `| ${activeSpot.altitude}m↑`}
           </p>
+          {isArrived && (
+            <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2 py-1 text-[10px] font-semibold text-amber-200">
+              <span className="text-[10px]">✨</span>
+              <span>スポットに到着しました！</span>
+            </div>
+          )}
         </div>
       </div>
 
