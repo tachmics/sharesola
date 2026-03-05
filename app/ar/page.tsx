@@ -138,38 +138,66 @@ export default function ARPage() {
         <>
           <div className="relative flex-grow z-10 pointer-events-none">
             {SKY_SPOTS.map((spot) => {
-              const bearing = userPos ? getBearing(userPos.lat, userPos.lng, spot.lat, spot.lng) : 42;
-              const distance = userPos ? getDistance(userPos.lat, userPos.lng, spot.lat, spot.lng) : 300;
+              const bearing = userPos
+                ? getBearing(userPos.lat, userPos.lng, spot.lat, spot.lng)
+                : 42;
+              const distance = userPos
+                ? getDistance(userPos.lat, userPos.lng, spot.lat, spot.lng)
+                : 300;
 
-              const diffX = ((bearing - alpha + 540) % 360) - 180;
-              if (Math.abs(diffX) > 45) return null;
-              const screenX = diffX * 25; 
+              const rawDiff = ((bearing - alpha + 540) % 360) - 180;
+              const fovHalf = 45; // 視野角の半分（約90度分）
+              const edgeSoftness = 15; // 端でのフェード用
+
+              if (Math.abs(rawDiff) > fovHalf + edgeSoftness) return null;
+
+              const angle = Math.abs(rawDiff);
+              const edgeFactor =
+                angle <= fovHalf
+                  ? 1
+                  : Math.max(0, 1 - (angle - fovHalf) / edgeSoftness);
+
+              const screenX = rawDiff * 25;
 
               const spotPitch = Math.atan2(spot.altitude, distance) * (180 / Math.PI);
-              const devicePitch = 75 - beta; 
+              const devicePitch = 75 - beta;
               const screenY = -((spotPitch + devicePitch) * 22);
 
-              // ✨ 遠近法：100mを基準にスケールを計算
-              const baseScale = Math.max(0.4, Math.min(1.5, 200 / (distance + 100)));
+              // ✨ 遠近法：距離に応じてスケールと透明度を調整
+              const baseScale = Math.max(0.3, Math.min(1.5, 220 / (distance + 150)));
               const isActive = activeSpot?.id === spot.id;
-              const finalScale = isActive ? baseScale * 1.2 : baseScale;
+              const finalScale = isActive ? baseScale * 1.25 : baseScale;
+              const distanceOpacity = 0.15 + baseScale * 0.55;
+              const finalOpacity = distanceOpacity * edgeFactor;
 
               return (
-                <div key={spot.id} className="absolute inset-0 flex items-center justify-center transition-opacity duration-300" style={{ transform: `translateX(${screenX}px)` }}>
-                  <div className="relative flex flex-col items-center" style={{ transform: `translateY(${screenY}px) scale(${finalScale})` }}>
+                <div
+                  key={spot.id}
+                  className="absolute inset-0 flex items-center justify-center transition-opacity duration-200"
+                  style={{ transform: `translateX(${screenX}px)`, opacity: finalOpacity }}
+                >
+                  <div
+                    className="relative flex flex-col items-center"
+                    style={{ transform: `translateY(${screenY}px) scale(${finalScale})` }}
+                  >
                     {/* 距離に応じて太さと透明度が変わる柱 */}
-                    <div 
-                      className="absolute bottom-10 bg-gradient-to-t from-white via-white/20 to-transparent" 
-                      style={{ 
-                        width: `${2 * baseScale}px`, 
-                        height: '200vh',
-                        opacity: 0.3 + (baseScale * 0.4)
-                      }} 
+                    <div
+                      className="absolute bottom-10 bg-gradient-to-t from-white via-white/20 to-transparent"
+                      style={{
+                        width: `${2 * baseScale}px`,
+                        height: "200vh",
+                      }}
                     />
-                    
-                    <div 
-                      onClick={() => setActiveSpot({...spot, dist: Math.round(distance)})} 
-                      className={`pointer-events-auto cursor-pointer w-16 h-16 rounded-full flex items-center justify-center border-4 transition-all shadow-2xl ${isActive ? 'bg-white border-blue-500 shadow-blue-500/50' : 'bg-white/80 border-transparent'}`}
+
+                    <div
+                      onClick={() =>
+                        setActiveSpot({ ...spot, dist: Math.round(distance) })
+                      }
+                      className={`pointer-events-auto cursor-pointer w-16 h-16 rounded-full flex items-center justify-center border-4 transition-all shadow-2xl ${
+                        isActive
+                          ? "bg-white border-blue-500 shadow-blue-500/50"
+                          : "bg-white/80 border-transparent"
+                      }`}
                     >
                       <span className="text-3xl">{spot.icon}</span>
                     </div>
