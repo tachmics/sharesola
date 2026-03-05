@@ -180,23 +180,71 @@ export default function ARPage() {
                     className="relative flex flex-col items-center"
                     style={{ transform: `translateY(${screenY}px) scale(${finalScale})` }}
                   >
-                    {/* 距離に応じて太さと透明度が変わる柱 */}
+                    {/* ✨ エネルギーシェーダー風の光の柱 */}
                     <div
-                      className="absolute bottom-10 bg-gradient-to-t from-white via-white/20 to-transparent"
+                      className="absolute bottom-10 origin-bottom bg-gradient-to-t from-sky-400 via-sky-200/80 to-transparent shadow-[0_0_40px_rgba(56,189,248,0.9)]"
                       style={{
                         width: `${2 * baseScale}px`,
                         height: "200vh",
+                        filter: "blur(2px)",
+                        animation: "pillarPulseWidth 3.2s ease-in-out infinite",
                       }}
                     />
+                    {/* 柱の中心コア（細く明るい芯） */}
+                    <div
+                      className="absolute bottom-10 origin-bottom bg-gradient-to-t from-cyan-300 via-white to-transparent pointer-events-none"
+                      style={{
+                        width: `${0.9 * baseScale}px`,
+                        height: "200vh",
+                        boxShadow:
+                          "0 0 35px rgba(125,211,252,0.7), 0 0 90px rgba(56,189,248,0.8)",
+                        opacity: 0.9,
+                        filter: "blur(1px)",
+                      }}
+                    />
+                    {/* パーティクル（小さな光の粒が上昇） */}
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="absolute bottom-12 rounded-full bg-cyan-200"
+                        style={{
+                          width: 2,
+                          height: 2,
+                          left: `${(Math.random() - 0.5) * 12}px`,
+                          animation: `pillarParticles 3.6s linear infinite`,
+                          animationDelay: `${i * 0.4}s`,
+                          opacity: 0.8,
+                        }}
+                      />
+                    ))}
+                    {/* 接地面の波紋エフェクト */}
+                    <div className="absolute bottom-9">
+                      <div
+                        className="relative w-16 h-16 rounded-full border border-cyan-300/60"
+                        style={{
+                          boxShadow:
+                            "0 0 25px rgba(56,189,248,0.9), 0 0 50px rgba(56,189,248,0.7)",
+                          filter: "blur(1px)",
+                          opacity: 0.7,
+                        }}
+                      />
+                      <div
+                        className="absolute inset-0 rounded-full border border-cyan-200/40"
+                        style={{
+                          animation: "pillarRipple 3s ease-out infinite",
+                        }}
+                      />
+                    </div>
 
+                    {/* タップ可能なスポットアイコン */}
                     <div
                       onClick={() =>
                         setActiveSpot({ ...spot, dist: Math.round(distance) })
                       }
                       className={`pointer-events-auto cursor-pointer w-16 h-16 rounded-full flex items-center justify-center border-4 transition-all shadow-2xl ${
                         isActive
-                          ? "bg-white border-blue-500 shadow-blue-500/50"
-                          : "bg-white/80 border-transparent"
+                          ? "bg-white border-sky-400 shadow-sky-400/70"
+                          : "bg-white/90 border-transparent"
                       }`}
                     >
                       <span className="text-3xl">{spot.icon}</span>
