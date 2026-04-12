@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { ArrowRight, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -45,15 +46,18 @@ export function HeroSection() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button 
+              <Button
+                asChild
                 size="lg"
                 className="group relative overflow-hidden bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-500 text-white border-0 rounded-full px-8 py-7 text-lg font-bold shadow-xl shadow-sky-500/25 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-sky-500/30"
               >
-                <span className="relative z-10 flex items-center gap-3">
-                  ARで近くの屋上を探す
-                  <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-blue-500 to-sky-500 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                <Link href="/ar">
+                  <span className="relative z-10 flex items-center gap-3">
+                    ARで近くの屋上を探す
+                    <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
+                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-blue-500 to-sky-500 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                </Link>
               </Button>
               <Button 
                 variant="outline"

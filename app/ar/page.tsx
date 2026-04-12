@@ -18,6 +18,8 @@ export default function ARPage() {
     "idle"
   );
   const geoWatchIdRef = useRef<number | null>(null);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
+  const [hasCameraFeed, setHasCameraFeed] = useState(false);
 
   // 現在の位置に応じてアクティブなスポットの距離を更新し、
   // 30m 以内に近づいたら自動的に詳細カードを開く
@@ -79,46 +81,84 @@ export default function ARPage() {
   };
 
   const startAR = async () => {
-    try {
-      if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
+    // iOS 13+ のジャイロ許可。拒否・未対応でも AR 画面は開く（コンパスは弱くなるだけ）。
+    if (typeof (DeviceOrientationEvent as any).requestPermission === "function") {
+      try {
         await (DeviceOrientationEvent as any).requestPermission();
+      } catch {
+        /* 続行 */
       }
+    }
 
-      window.addEventListener("deviceorientation", (e) => {
-        const compass = (e as any).webkitCompassHeading || (360 - (e.alpha || 0));
-        setAlpha(prev => {
+    window.addEventListener(
+      "deviceorientation",
+      (e) => {
+        const compass =
+          (e as any).webkitCompassHeading || (360 - (e.alpha || 0));
+        setAlpha((prev) => {
           const diff = ((compass - prev + 540) % 360) - 180;
           return (prev + diff * 0.2 + 360) % 360;
         });
-        if (e.beta !== null) setBeta(prev => prev * 0.8 + e.beta! * 0.2); 
-      }, true);
+        if (e.beta !== null) setBeta((prev) => prev * 0.8 + e.beta! * 0.2);
+      },
+      true
+    );
 
-      if (!("geolocation" in navigator)) {
-        setGeoStatus("error");
-      } else {
-        setGeoStatus("watching");
-        const watchId = navigator.geolocation.watchPosition(
-          (pos) => {
-            setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-            setGeoStatus("watching");
-          },
-          (err) => {
-            console.error(err);
-            if (err.code === 1) {
-              setGeoStatus("denied");
-            } else {
-              setGeoStatus("error");
+    if (!("geolocation" in navigator)) {
+      setGeoStatus("error");
+    } else {
+      setGeoStatus("watching");
+      const watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          setGeoStatus("watching");
+        },
+        (err) => {
+          if (err.code === 1) {
+            setGeoStatus("denied");
+          } else {
+            setGeoStatus("error");
+            if (process.env.NODE_ENV === "development") {
+              console.info(
+                "[AR] Geolocation:",
+                err.code,
+                err.message || "(no message)"
+              );
             }
-          },
-          { enableHighAccuracy: true }
-        );
-        geoWatchIdRef.current = watchId;
-      }
+          }
+        },
+        { enableHighAccuracy: true }
+      );
+      geoWatchIdRef.current = watchId;
+    }
 
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-      if (videoRef.current) { videoRef.current.srcObject = stream; await videoRef.current.play(); }
-      setIsStarted(true);
-    } catch (err) { alert("起動エラー"); }
+    // ノートPC等は背面カメラが無く environment 単体指定で失敗しやすい → ideal → 任意 → なし
+    let stream: MediaStream | null = null;
+    if (navigator.mediaDevices?.getUserMedia) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } },
+        });
+      } catch {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        } catch {
+          stream = null;
+        }
+      }
+    }
+
+    cameraStreamRef.current = stream;
+    setHasCameraFeed(!!stream);
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+      if (stream) {
+        await videoRef.current.play().catch(() => {});
+      }
+    }
+
+    setIsStarted(true);
   };
 
   // コンポーネントのアンマウント時に位置情報ウォッチを停止
@@ -127,6 +167,8 @@ export default function ARPage() {
       if (geoWatchIdRef.current !== null && "geolocation" in navigator) {
         navigator.geolocation.clearWatch(geoWatchIdRef.current);
       }
+      cameraStreamRef.current?.getTracks().forEach((t) => t.stop());
+      cameraStreamRef.current = null;
     };
   }, []);
 
@@ -280,6 +322,11 @@ export default function ARPage() {
               )}
             </AnimatePresence>
           </div>
+          {!hasCameraFeed && (
+            <div className="absolute top-14 left-1/2 z-40 -translate-x-1/2 max-w-[90vw] rounded-full bg-amber-500/20 px-4 py-2 text-center text-[11px] font-medium text-amber-100 border border-amber-400/30 pointer-events-none">
+              カメラを使えないため、背景なしで表示しています（拒否・未搭載・HTTPS以外など）
+            </div>
+          )}
           {/* 現在地デバッグ表示（左下、小さく） */}
           <div className="absolute left-2 bottom-2 z-40 rounded-md bg-black/60 px-2 py-1 text-[10px] text-white/70 pointer-events-none">
             <div>geoStatus: {geoStatus}</div>

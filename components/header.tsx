@@ -74,7 +74,7 @@ export function Header() {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden py-6 border-t border-border/50 animate-in slide-in-from-top-2 duration-200">
+          <div className="md:hidden py-6 border-t border-border/50 animate-[menu-enter_200ms_ease-out]">
             <div className="flex flex-col gap-4">
               <a 
                 href="#spots" 
