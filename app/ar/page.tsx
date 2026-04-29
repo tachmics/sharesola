@@ -20,6 +20,7 @@ export default function ARPage() {
   const geoWatchIdRef = useRef<number | null>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const [hasCameraFeed, setHasCameraFeed] = useState(false);
+  const [dismissedSpotId, setDismissedSpotId] = useState<string | null>(null);
 
   // 現在の位置に応じてアクティブなスポットの距離を更新し、
   // 30m 以内に近づいたら自動的に詳細カードを開く
@@ -48,7 +49,7 @@ export default function ARPage() {
     }
 
     // 30m 以内に入ったスポットがある場合、自動的にカードを開く
-    if (nearest) {
+    if (nearest && nearest.spot.id !== dismissedSpotId) {
       setActiveSpot((prev: any | null) => {
         if (prev && prev.id === nearest!.spot.id && prev.dist === Math.round(nearest!.dist)) {
           return prev;
@@ -56,7 +57,7 @@ export default function ARPage() {
         return { ...nearest!.spot, dist: Math.round(nearest!.dist) };
       });
     }
-  }, [userPos, activeSpot]);
+  }, [userPos, activeSpot, dismissedSpotId]);
 
   // 数学ロジック（getBearing, getDistance）は既存のものを維持
   const getBearing = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -280,9 +281,14 @@ export default function ARPage() {
 
                     {/* タップ可能なスポットアイコン */}
                     <div
-                      onClick={() =>
-                        setActiveSpot({ ...spot, dist: Math.round(distance) })
-                      }
+                      onClick={() => {
+                        setDismissedSpotId(null);
+                        setActiveSpot((prev: any | null) =>
+                          prev && prev.id === spot.id
+                            ? null
+                            : { ...spot, dist: Math.round(distance) }
+                        );
+                      }}
                       className={`pointer-events-auto cursor-pointer w-16 h-16 rounded-full flex items-center justify-center border-4 transition-all shadow-2xl ${
                         isActive
                           ? "bg-white border-sky-400 shadow-sky-400/70"
@@ -304,6 +310,10 @@ export default function ARPage() {
                 <MotionSpotCard
                   key={activeSpot.id}
                   activeSpot={activeSpot}
+                  onClose={() => {
+                    setDismissedSpotId(activeSpot.id);
+                    setActiveSpot(null);
+                  }}
                   onReserve={() =>
                     router.push(`/reserve?id=${encodeURIComponent(activeSpot.id)}`)
                   }
@@ -364,10 +374,15 @@ export default function ARPage() {
 
 type MotionSpotCardProps = {
   activeSpot: any;
+  onClose: () => void;
   onReserve: () => void;
 };
 
-const MotionSpotCard: React.FC<MotionSpotCardProps> = ({ activeSpot, onReserve }) => {
+const MotionSpotCard: React.FC<MotionSpotCardProps> = ({
+  activeSpot,
+  onClose,
+  onReserve,
+}) => {
   const detail: FreeSpot | undefined = FREE_SPOTS.find((s) => s.id === activeSpot.id);
   const isArrived =
     typeof activeSpot?.dist === "number" && !Number.isNaN(activeSpot.dist) && activeSpot.dist <= 30;
@@ -403,6 +418,13 @@ const MotionSpotCard: React.FC<MotionSpotCardProps> = ({ activeSpot, onReserve }
             </div>
           )}
         </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-full border border-white/20 px-2 py-1 text-[10px] text-zinc-200 hover:bg-white/10 transition-colors"
+        >
+          閉じる
+        </button>
       </div>
 
       {detail && detail.images?.length > 0 && (
