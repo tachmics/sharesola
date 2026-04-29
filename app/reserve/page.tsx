@@ -24,10 +24,9 @@ function ReservationContent() {
   const router = useRouter();
 
   // URLからパラメータを取得
-  const idParam = searchParams.get("id");
-  const spotId = idParam ? Number(idParam) : NaN;
+  const spotId = searchParams.get("id") ?? "";
   const spot: FreeSpot | undefined =
-    !Number.isNaN(spotId) && spotId > 0 ? getFreeSpotById(spotId) : undefined;
+    spotId.length > 0 ? getFreeSpotById(spotId) : undefined;
 
   const date = searchParams.get("date") || "2024-05-20";
   const time = searchParams.get("time") || "19:00";
@@ -159,6 +158,26 @@ function ReservationContent() {
               <p className="text-xs text-zinc-300 text-left leading-relaxed mt-2">
                 {spot.description}
               </p>
+            )}
+            <div className="rounded-2xl border border-zinc-700/80 bg-zinc-800/60 px-3 py-2 text-left">
+              <p className="text-xs text-zinc-300">
+                本日の日の入り:{" "}
+                <span className="font-semibold text-amber-300">
+                  {spot.todaySolar.sunsetLabel}
+                </span>
+              </p>
+            </div>
+            {spot.nightFeatures?.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {spot.nightFeatures.map((feature) => (
+                  <span
+                    key={feature}
+                    className="rounded-full border border-indigo-300/30 bg-indigo-400/10 px-2.5 py-1 text-[10px] font-medium text-indigo-100"
+                  >
+                    ✨ {feature}
+                  </span>
+                ))}
+              </div>
             )}
             <div className="text-xs text-zinc-500 text-left">
               出典:{" "}

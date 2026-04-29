@@ -304,7 +304,9 @@ export default function ARPage() {
                 <MotionSpotCard
                   key={activeSpot.id}
                   activeSpot={activeSpot}
-                  onReserve={() => router.push(`/reserve?id=${activeSpot.id}`)}
+                  onReserve={() =>
+                    router.push(`/reserve?id=${encodeURIComponent(activeSpot.id)}`)
+                  }
                 />
               ) : (
                 <motion.div
@@ -427,6 +429,30 @@ const MotionSpotCard: React.FC<MotionSpotCardProps> = ({ activeSpot, onReserve }
         <p className="text-xs text-zinc-200 text-left leading-relaxed mt-1">
           {detail.description}
         </p>
+      )}
+
+      {detail && (
+        <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2">
+          <p className="text-[11px] text-zinc-300">
+            本日の日の入り:{" "}
+            <span className="font-semibold text-amber-200">
+              {detail.todaySolar.sunsetLabel}
+            </span>
+          </p>
+        </div>
+      )}
+
+      {detail && detail.nightFeatures.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {detail.nightFeatures.map((feature) => (
+            <span
+              key={feature}
+              className="rounded-full border border-indigo-300/30 bg-indigo-400/10 px-2.5 py-1 text-[10px] font-medium text-indigo-100"
+            >
+              ✨ {feature}
+            </span>
+          ))}
+        </div>
       )}
 
       {detail && (
