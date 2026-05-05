@@ -26,8 +26,8 @@ export interface SpotCatalogItem {
     altitudeMeters?: number;
   };
   businessHours: {
-    open: string;
-    close: string;
+    weekday: { open: string; close: string };
+    sundayHoliday: { open: string; close: string };
   };
   closedDays: string[];
   price: number;
@@ -87,7 +87,6 @@ const SPOT_CATALOG_SOURCE: SpotSeed[] = [
       en: "Kudan Kaikan Terrace Rooftop Garden",
     },
     officialUrl: "https://kudan-tokyo.jp/kudan_terrace/",
-    sourceName: "九段会館テラス（参考）",
     description:
       "登録有形文化財の風格と、皇居を望む開放感が共存する特別な空間。都心にいながら静かな空と緑を楽しめる、シェアソラのフラッグシップ・スポットです。",
     address: "東京都千代田区九段南1丁目6-5 九段会館テラス",
@@ -97,9 +96,10 @@ const SPOT_CATALOG_SOURCE: SpotSeed[] = [
       lng: 139.7511,
       altitudeMeters: 20,
     },
+    sourceName: "九段会館テラス 公式サイト",
     businessHours: {
-      open: "09:00",
-      close: "22:00",
+      weekday: { open: "07:00", close: "23:00" },
+      sundayHoliday: { open: "08:00", close: "20:30" },
     },
     closedDays: ["不定休（施設都合・天候により変更）"],
     price: 0,
@@ -111,21 +111,26 @@ const SPOT_CATALOG_SOURCE: SpotSeed[] = [
       "自販機",
       "歴史的建築",
       "屋根あり（一部）",
+      "カフェ併設(5F)",
     ],
     usageRules: [
       "大音量の音楽再生は不可",
       "ドローン飛行は禁止",
       "他利用者の導線を塞がない",
       "ゴミは各自で持ち帰り",
+      "庭園内での飲食は禁止",
+      "商業撮影は事前申請が必要",
     ],
     skyOpenness: 90,
     solarScore: 94,
     nightViewScore: 89,
     nightFeatures: ["皇居のスカイライン", "暖色系ライトアップ", "静かな都市夜景"],
     images: [
-      "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=1600&q=80",
-      "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?auto=format&fit=crop&w=1600&q=80",
-      "https://images.unsplash.com/photo-1467269204594-9661b134dd2b?auto=format&fit=crop&w=1600&q=80",
+      "/images/spots/kudankaikan-terrace/IMG_0875.webp",
+      "/images/spots/kudankaikan-terrace/IMG_0876.webp",
+      "/images/spots/kudankaikan-terrace/IMG_0878.webp",
+      "/images/spots/kudankaikan-terrace/IMG_0881.webp",
+      "/images/spots/kudankaikan-terrace/IMG_0887.webp",
     ],
     ar: {
       icon: "🌿",

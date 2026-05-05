@@ -51,6 +51,27 @@ export default async function SpotDetailPage({ params }: SpotDetailPageProps) {
       </section>
 
       <div className="mx-auto mt-10 max-w-6xl px-6">
+        <section className="mb-8 rounded-3xl border border-border bg-card p-5">
+          <h2 className="text-sm font-bold tracking-wide text-muted-foreground">
+            フォトギャラリー
+          </h2>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {spot.images.map((img, idx) => (
+              <div
+                key={img}
+                className={`${idx === 0 ? "sm:col-span-2 lg:col-span-2" : ""} overflow-hidden rounded-2xl border border-border bg-muted`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={img}
+                  alt={`${spot.name.ja} ${idx + 1}`}
+                  className="h-56 w-full object-cover transition-transform duration-500 hover:scale-105"
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+
         <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
           <h2 className="text-sm font-bold tracking-wide text-muted-foreground">
             空のライブ情報
@@ -85,7 +106,10 @@ export default async function SpotDetailPage({ params }: SpotDetailPageProps) {
                       営業時間
                     </th>
                     <td className="px-4 py-3">
-                      {spot.businessHours.open} - {spot.businessHours.close}
+                      月-土 {spot.businessHours.weekday.open} - {spot.businessHours.weekday.close}
+                      <br />
+                      日祝 {spot.businessHours.sundayHoliday.open} -{" "}
+                      {spot.businessHours.sundayHoliday.close}
                     </td>
                   </tr>
                   <tr className="border-b border-border">
