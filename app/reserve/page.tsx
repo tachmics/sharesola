@@ -80,7 +80,7 @@ function ReservationContent() {
       <div className="max-w-md mx-auto space-y-8">
         <header>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-zinc-500 bg-clip-text text-transparent">
-            {spot.name} を予約
+            {spot.name.ja} を予約
           </h1>
           <p className="text-zinc-400 mt-2 text-sm">
             選択した屋上スポットの利用時間を予約します。
@@ -99,7 +99,7 @@ function ReservationContent() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={src}
-                    alt={`${spot.name} ${idx + 1}`}
+                    alt={`${spot.name.ja} ${idx + 1}`}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -115,10 +115,8 @@ function ReservationContent() {
             </div>
             <div className="text-left">
               <p className="text-sm text-zinc-500">Location</p>
-              <p className="text-lg font-medium">{spot.name}</p>
-              {spot.distanceLabel && (
-                <p className="text-xs text-zinc-500 mt-1">{spot.distanceLabel}</p>
-              )}
+              <p className="text-lg font-medium">{spot.name.ja}</p>
+              <p className="text-xs text-zinc-500 mt-1">{spot.accessDetail}</p>
             </div>
           </div>
 
@@ -182,12 +180,12 @@ function ReservationContent() {
             <div className="text-xs text-zinc-500 text-left">
               出典:{" "}
               <a
-                href={spot.sourceUrl}
+                href={spot.officialUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="underline hover:text-zinc-300"
               >
-                {spot.sourceLabel}
+                {spot.sourceName}
               </a>
             </div>
           </div>

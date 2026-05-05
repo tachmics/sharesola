@@ -314,6 +314,7 @@ export default function ARPage() {
                     setDismissedSpotId(activeSpot.id);
                     setActiveSpot(null);
                   }}
+                  onViewDetail={() => router.push(`/spots/${activeSpot.id}`)}
                   onReserve={() =>
                     router.push(`/reserve?id=${encodeURIComponent(activeSpot.id)}`)
                   }
@@ -375,12 +376,14 @@ export default function ARPage() {
 type MotionSpotCardProps = {
   activeSpot: any;
   onClose: () => void;
+  onViewDetail: () => void;
   onReserve: () => void;
 };
 
 const MotionSpotCard: React.FC<MotionSpotCardProps> = ({
   activeSpot,
   onClose,
+  onViewDetail,
   onReserve,
 }) => {
   const detail: FreeSpot | undefined = FREE_SPOTS.find((s) => s.id === activeSpot.id);
@@ -401,7 +404,7 @@ const MotionSpotCard: React.FC<MotionSpotCardProps> = ({
         </div>
         <div className="flex-1 text-left">
           <h3 className="font-black text-lg leading-tight mb-1 text-white">
-            {detail?.name ?? activeSpot.name}
+            {detail?.name.ja ?? activeSpot.name.ja}
           </h3>
           <p
             className={`text-xs font-semibold ${
@@ -438,7 +441,7 @@ const MotionSpotCard: React.FC<MotionSpotCardProps> = ({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={src}
-                  alt={`${detail.name} ${idx + 1}`}
+                  alt={`${detail.name.ja} ${idx + 1}`}
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -481,18 +484,25 @@ const MotionSpotCard: React.FC<MotionSpotCardProps> = ({
         <div className="flex items-center justify-between gap-3 mt-1">
           <button
             type="button"
+            onClick={onViewDetail}
+            className="px-3 py-2 rounded-2xl border border-sky-300/40 text-[10px] text-sky-100 hover:bg-sky-400/20 transition-colors"
+          >
+            詳細を見る
+          </button>
+          <button
+            type="button"
             onClick={onReserve}
             className="flex-1 bg-white text-black py-3 rounded-2xl font-bold text-xs tracking-wide shadow-[0_0_25px_rgba(255,255,255,0.25)] active:scale-[0.97] transition-transform"
           >
             このスポットを予約する
           </button>
           <a
-            href={detail.sourceUrl}
+            href={detail.officialUrl}
             target="_blank"
             rel="noreferrer"
             className="px-3 py-2 rounded-2xl border border-white/20 text-[10px] text-zinc-200 hover:bg-white/5 transition-colors"
           >
-            出典: {detail.sourceLabel}
+            出典: {detail.sourceName}
           </a>
         </div>
       )}
