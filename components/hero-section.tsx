@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button"
 import { SPOT_CATALOG } from "@/app/lib/spots"
 
 const flagship = SPOT_CATALOG[0]
-const heroImage =
-  flagship?.images[0] ?? "/images/spots/kudankaikan-terrace/IMG_0875.webp"
+// アイキャッチはイメージ訴求用。スポット実写真は詳細・カード側で表示
+const heroImage = "/images/hero-rooftop.png"
+const heroImageAlt =
+  "屋上テラスでパラソルの下、日差しを楽しむ様子"
 
 export function HeroSection() {
   return (
@@ -99,11 +101,7 @@ export function HeroSection() {
             <div className="relative aspect-[4/3] md:aspect-[4/4] lg:aspect-[4/5] rounded-2xl lg:rounded-3xl overflow-hidden shadow-2xl shadow-sky-500/10 transition-transform duration-500 hover:scale-[1.02]">
               <Image
                 src={heroImage}
-                alt={
-                  flagship
-                    ? `${flagship.name.ja}の屋上庭園`
-                    : "屋上テラスで日差しを楽しむ様子"
-                }
+                alt={heroImageAlt}
                 fill
                 className="object-cover"
                 priority
